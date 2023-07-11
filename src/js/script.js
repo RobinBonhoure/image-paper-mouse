@@ -10,6 +10,26 @@ import vertex from '../shaders/vertex.glsl'
 import ocean from '../../static/img/ocean.jpg';
 
 
+// VAR OVERLAYSCROLLBARS
+var instance = OverlayScrollbars(document.querySelector("#top-page"), {
+    callbacks: {
+        onScroll: function (e) {
+            var scroll = instance.scroll();
+            var scrollPosition = scroll.position.y;
+            navMasked(scrollPosition);
+            window.dispatchEvent(
+                new CustomEvent("window-scroll", { detail: scrollPosition })
+            );
+        },
+    },
+});
+window.addEventListener("window-scroll", function (e) {
+    this.currentScroll = e.detail;
+    console.log(e.detail)
+    //   this.setPosition();
+})
+
+
 
 export default class Sketch {
     constructor(options) {
@@ -36,22 +56,22 @@ export default class Sketch {
 
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 
-        this.images = [...document.querySelectorAll('img')];
+        this.images = [...document.querySelectorAll('[paper-effect]')];
 
 
         // wait font loaded for no changing position after loaded
-        const fontOpen = new Promise(resolve => {
-            new FontFaceObserver("Open Sans").load().then(() => {
-                resolve();
-            });
-        });
+        // const fontOpen = new Promise(resolve => {
+        //     new FontFaceObserver("Open Sans").load().then(() => {
+        //         resolve();
+        //     });
+        // });
 
         // wait font loaded
-        const fontPlayfair = new Promise(resolve => {
-            new FontFaceObserver("Playfair Display").load().then(() => {
-                resolve();
-            });
-        });
+        // const fontPlayfair = new Promise(resolve => {
+        //     new FontFaceObserver("Playfair Display").load().then(() => {
+        //         resolve();
+        //     });
+        // });
 
         // Preload images
         // wait images loaded
@@ -59,7 +79,8 @@ export default class Sketch {
             imagesLoaded(document.querySelectorAll("img"), { background: true }, resolve);
         });
 
-        let allDone = [fontOpen, fontPlayfair, preloadImages]
+        // let allDone = [fontOpen, fontPlayfair, preloadImages]
+        let allDone = [preloadImages]
         // should not be zero by default in case the browser remember the previous position
         this.currentScroll = 0;
         this.raycaster = new THREE.Raycaster();
@@ -69,7 +90,7 @@ export default class Sketch {
         // if all promises are ok lets go
         Promise.all(allDone).then(() => {
             // custom scroll to remove laggy positionning cause to the the calculation with the scroll addEventListenner
-            this.scroll = new Scroll();
+            // this.scroll = new Scroll();
             this.addImages();
             this.setPosition();
 
@@ -80,8 +101,14 @@ export default class Sketch {
             this.render();
             // window.addEventListener('scroll',()=>{
             //     this.currentScroll = window.scrollY;
+            //     console.log(this.currentScroll)
             //     this.setPosition();
             // })
+            window.addEventListener("window-scroll", function (e) {
+                this.currentScroll = e.detail;
+                console.log(e.detail)
+                this.setPosition();
+            })
         })
 
 
@@ -93,29 +120,26 @@ export default class Sketch {
             this.mouse.x = (event.clientX / this.width) * 2 - 1;
             this.mouse.y = - (event.clientY / this.height) * 2 + 1;
 
-            console.log(this.mouse.y)
-        
             // update the picking ray with the camera and mouse position
             this.raycaster.setFromCamera(this.mouse, this.camera);
-        
+
             // calculate objects intersecting the picking ray
             // here this.scene.children is for all children of the DOM, should be another way to target different objects in different ways
             const intersects = this.raycaster.intersectObjects(this.scene.children);
-        
+
             if (intersects.length > 0) {
                 let obj = intersects[0].object;
                 obj.material.uniforms.hover.value = intersects[0].uv;
             } else {
                 this.material.uniforms.hover.value = 0;
             }
-        // Set the uniform values for mouseX and mouseY
-        // this.materials.forEach(m => {
-        //     m.uniforms.mouseX.value = this.mouse.x - m.uniforms.left.value;
-        //     m.uniforms.mouseY.value = this.mouse.y;
-        //     console.log(m.uniforms)
-        // });
-        this.materials[0].uniforms.mouseX.value = this.mouse.x;
-        this.materials[0].uniforms.mouseY.value = this.mouse.y;
+            // Set the uniform values for mouseX and mouseY
+            this.materials.forEach(m => {
+                m.uniforms.shaderX.value = (this.mouse.x + 1 - m.uniforms.left.value * 2 / this.width) * 2;
+                m.uniforms.shaderY.value = 0;
+                // console.log((this.mouse.x + 1 - m.uniforms.left.value * 2 / (this.width + m.uniforms.widthImg.value / 2)) * 2)
+                // console.log((-this.mouse.y + 1 - m.uniforms.top.value * 2 / (this.height + m.uniforms.heightImg.value / 2)))
+            });
         }, false);
     }
 
@@ -136,12 +160,16 @@ export default class Sketch {
             uniforms: {
                 time: { value: 0 },
                 uImage: { value: 0 },
+                shaderX: { value: 0 },
+                shaderY: { value: 0 },
                 mouseX: { value: 0 },
                 mouseY: { value: 0 },
                 top: { value: 0 },
                 left: { value: 0 },
                 width: { value: 0 },
                 height: { value: 0 },
+                widthImg: { value: 0 },
+                heightImg: { value: 0 },
                 hover: { value: new THREE.Vector2(0.5, 0.5) },
                 hoverState: { value: 0 },
                 oceanTexture: { value: new THREE.TextureLoader().load(ocean) },
@@ -189,8 +217,10 @@ export default class Sketch {
             material.uniforms.mouseY.value = this.mouse.y
             material.uniforms.top.value = bounds.top
             material.uniforms.left.value = bounds.left
-            material.uniforms.width.value = bounds.width
-            material.uniforms.height.value = bounds.height
+            material.uniforms.widthImg.value = bounds.width
+            material.uniforms.heightImg.value = bounds.height
+            material.uniforms.width.value = this.width
+            material.uniforms.height.value = this.height
 
             let mesh = new THREE.Mesh(geometry, material);
 
@@ -239,8 +269,8 @@ export default class Sketch {
     render() {
         this.time += 0.05;
 
-        this.scroll.render();
-        this.currentScroll = this.scroll.scrollToRender;
+        // this.scroll.render();
+        // this.currentScroll = this.scroll.scrollToRender;
         this.setPosition();
 
 

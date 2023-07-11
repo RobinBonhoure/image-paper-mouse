@@ -5,18 +5,16 @@ uniform float hoverState;
 varying float vNoise;
 varying vec2 vUv;
 
-uniform float mouseX;
-uniform float mouseY;
-uniform float top;
-uniform float left;
-uniform float width;
-uniform float height;
+uniform float shaderX;
+uniform float shaderY;
+uniform float widthImg;
+uniform float heightImg;
 varying vec2 vMousePos;
 
 
 void main() {
     // Calculate the mouse position from the center
-    vec2 mousePosition = vec2(mouseX - (width / 2.0), mouseY);
+    vec2 mousePosition = vec2(shaderX , shaderY);
 
     // Assign the mouse position to a variable for use in the fragment shader
     vec2 mousePos = mousePosition;
@@ -25,12 +23,12 @@ void main() {
     vMousePos = mousePos;
 
     vec3 newposition = position;
-    float PI = 3.1415925;
     
-    float dist = distance(uv,mousePosition);
+    float dist = distance(uv,hover);
+    // float dist = distance(uv,mousePosition);
 
-    // float z = hoverState * -100. * pow(sin(dist * 1. - 1.0), 3.0); 
-    float z = -100. * pow(sin(dist * 1. - 1.0), 3.0); 
+    float z = hoverState * -100. * pow(sin(dist * 1. - 1.0), 3.0); 
+    // float z = -100. * pow(sin(dist * 1. - 1.0), 3.0); 
     newposition.z += z < 0.0 ? 0.0 : z;
 
     // vNoise = hoverState *-5. * pow(sin(dist * 1. - 1.0), 3.0);

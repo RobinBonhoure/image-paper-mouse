@@ -1,21 +1,6 @@
-*{
-    margin: 0;
-    padding: 0;
-}
-body{
-    font-family: 'Open Sans', sans-serif;
-}
-
-figure {
-    // padding: 100px;
-    // margin: -100px;
-    display: inline-block;
-}
-
-img {
+img[paper-effect] {
     opacity: 0;
 }
-
 #container{
     height: 100vh;
     width: 100vw;
