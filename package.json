@@ -1,0 +1,26 @@
+{
+  "repository": "#",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^4.0.4",
+    "vite-plugin-glsl": "^1.0.2"
+  },
+  "dependencies": {
+    "gsap": "^3.11.5",
+    "lil-gui": "^0.17.0",
+    "sass": "^1.62.0",
+    "stats.js": "^0.17.0",
+    "three": "^0.148.0",
+    "imagesloaded": "^4.1.4",
+    "fontfaceobserver": "^2.1.0"
+  },
+  "volta": {
+    "node": "16.17.1"
+  }
+}
