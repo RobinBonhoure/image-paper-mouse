@@ -9,27 +9,7 @@ import vertex from '../shaders/vertex.glsl'
 
 import ocean from '../../static/img/ocean.jpg';
 
-
-// VAR OVERLAYSCROLLBARS
-var instance = OverlayScrollbars(document.querySelector("#top-page"), {
-    callbacks: {
-        onScroll: function (e) {
-            var scroll = instance.scroll();
-            var scrollPosition = scroll.position.y;
-            navMasked(scrollPosition);
-            window.dispatchEvent(
-                new CustomEvent("window-scroll", { detail: scrollPosition })
-            );
-        },
-    },
-});
-window.addEventListener("window-scroll", function (e) {
-    this.currentScroll = e.detail;
-    console.log(e.detail)
-    //   this.setPosition();
-})
-
-
+let scrollThree = 0;
 
 export default class Sketch {
     constructor(options) {
@@ -58,20 +38,23 @@ export default class Sketch {
 
         this.images = [...document.querySelectorAll('[paper-effect]')];
 
+        this.bouton = document.querySelector('#bouton');
+        this.bouton.addEventListener('click', () => {
+            console.log(this.imageStore);
+            this.imageStore.forEach(image => {
+                image.mesh.geometry.dispose()
+                this.scene.remove(image.mesh.geometry);
+            });
+            console.log(this.imageStore);
+        })
+
 
         // wait font loaded for no changing position after loaded
-        // const fontOpen = new Promise(resolve => {
-        //     new FontFaceObserver("Open Sans").load().then(() => {
-        //         resolve();
-        //     });
-        // });
-
-        // wait font loaded
-        // const fontPlayfair = new Promise(resolve => {
-        //     new FontFaceObserver("Playfair Display").load().then(() => {
-        //         resolve();
-        //     });
-        // });
+        const fontOpen = new Promise(resolve => {
+            new FontFaceObserver("Poppins").load().then(() => {
+                resolve();
+            });
+        });
 
         // Preload images
         // wait images loaded
@@ -79,8 +62,7 @@ export default class Sketch {
             imagesLoaded(document.querySelectorAll("img"), { background: true }, resolve);
         });
 
-        // let allDone = [fontOpen, fontPlayfair, preloadImages]
-        let allDone = [preloadImages]
+        let allDone = [fontOpen, preloadImages]
         // should not be zero by default in case the browser remember the previous position
         this.currentScroll = 0;
         this.raycaster = new THREE.Raycaster();
@@ -97,18 +79,7 @@ export default class Sketch {
             this.mouseMovement()
             this.resize()
             this.setupResize();
-            // this.addObjects();
             this.render();
-            // window.addEventListener('scroll',()=>{
-            //     this.currentScroll = window.scrollY;
-            //     console.log(this.currentScroll)
-            //     this.setPosition();
-            // })
-            window.addEventListener("window-scroll", function (e) {
-                this.currentScroll = e.detail;
-                console.log(e.detail)
-                this.setPosition();
-            })
         })
 
 
@@ -133,13 +104,6 @@ export default class Sketch {
             } else {
                 this.material.uniforms.hover.value = 0;
             }
-            // Set the uniform values for mouseX and mouseY
-            this.materials.forEach(m => {
-                m.uniforms.shaderX.value = (this.mouse.x + 1 - m.uniforms.left.value * 2 / this.width) * 2;
-                m.uniforms.shaderY.value = 0;
-                // console.log((this.mouse.x + 1 - m.uniforms.left.value * 2 / (this.width + m.uniforms.widthImg.value / 2)) * 2)
-                // console.log((-this.mouse.y + 1 - m.uniforms.top.value * 2 / (this.height + m.uniforms.heightImg.value / 2)))
-            });
         }, false);
     }
 
@@ -154,6 +118,7 @@ export default class Sketch {
         this.camera.aspect = this.width / this.height;
         this.camera.updateProjectionMatrix();
     }
+
 
     addImages() {
         this.material = new THREE.ShaderMaterial({
@@ -187,12 +152,17 @@ export default class Sketch {
             let bounds = img.getBoundingClientRect()
 
             let geometry = new THREE.PlaneGeometry(bounds.width, bounds.height, 60, 60);
-            let texture = new THREE.Texture(img);
+
+            let image = new Image();
+            image.src = img.src;
+            let texture = new THREE.Texture(image);
+
+
+            //             let CLONED_IMAGE = DOM_IMG.cloneNode(true); // this helped when i set image width in JS
+            // let texture = new THREE.Texture(CLONED_IMAGE);
+
+
             texture.needsUpdate = true;
-            // let material = new THREE.MeshBasicMaterial({
-            //     // color: 0xff0000,
-            //     map: texture
-            // })
 
             let material = this.material.clone();
 
@@ -212,15 +182,6 @@ export default class Sketch {
             this.materials.push(material)
 
             material.uniforms.uImage.value = texture;
-
-            material.uniforms.mouseX.value = this.mouse.x
-            material.uniforms.mouseY.value = this.mouse.y
-            material.uniforms.top.value = bounds.top
-            material.uniforms.left.value = bounds.left
-            material.uniforms.widthImg.value = bounds.width
-            material.uniforms.heightImg.value = bounds.height
-            material.uniforms.width.value = this.width
-            material.uniforms.height.value = this.height
 
             let mesh = new THREE.Mesh(geometry, material);
 
@@ -246,47 +207,35 @@ export default class Sketch {
         })
     }
 
-    addObjects() {
-        this.geometry = new THREE.PlaneGeometry(200, 400, 100, 100);
-        // this.geometry = new THREE.SphereGeometry( 0.4, 40,40 );
-        this.material = new THREE.MeshNormalMaterial();
-
-        this.material = new THREE.ShaderMaterial({
-            uniforms: {
-                time: { value: 0 },
-                oceanTexture: { value: new THREE.TextureLoader().load(ocean) },
-            },
-            side: THREE.DoubleSide,
-            fragmentShader: fragment,
-            vertexShader: vertex,
-            // wireframe: true
-        })
-
-        this.mesh = new THREE.Mesh(this.geometry, this.material);
-        this.scene.add(this.mesh);
-    }
 
     render() {
         this.time += 0.05;
 
-        // this.scroll.render();
-        // this.currentScroll = this.scroll.scrollToRender;
+        this.currentScroll = scrollThree
         this.setPosition();
-
-
-        // this.material.uniforms.time.value = this.time;
 
         // update time for each object
         this.materials.forEach(m => {
             m.uniforms.time.value = this.time;
         })
 
+        // this.scene.children
+
         this.renderer.render(this.scene, this.camera);
         window.requestAnimationFrame(this.render.bind(this));
     }
 }
 
-new Sketch({
-    dom: document.getElementById('container')
+// ONLOAD
+window.addEventListener("load", (event) => {
+    const sketch = new Sketch({
+        dom: document.getElementById('container')
+    });
+    // window.addEventListener("window-scroll", function (e) {
+    //     scrollThree = e.detail;
+    // });
+    window.addEventListener("scroll", function (e) {
+        scrollThree = window.scrollY;
+    });
 });
 
