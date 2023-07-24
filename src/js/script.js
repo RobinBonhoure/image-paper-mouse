@@ -36,18 +36,24 @@ export default class Sketch {
 
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 
-        this.images = [...document.querySelectorAll('[paper-effect]')];
+        this.images = [...document.querySelectorAll('#top-page>[paper-effect]')];
 
         this.bouton = document.querySelector('#bouton');
+        // if (this.bouton.classList.contains('active'))
         this.bouton.addEventListener('click', () => {
-            console.log(this.imageStore);
-            this.imageStore.forEach(image => {
-                image.mesh.geometry.dispose()
-                this.scene.remove(image.mesh.geometry);
-            });
-            console.log(this.imageStore);
+            while (this.scene.children.length > 0) {
+                var child = this.scene.children[0];
+                this.scene.remove(child);
+            }
+            this.images = [...document.querySelectorAll('[second-paper-effect]')];
+            this.addImages();
+            this.setPosition();
+            this.mouseMovement()
+            this.resize()
+            this.setupResize();
+            this.render();
         })
-
+        
 
         // wait font loaded for no changing position after loaded
         const fontOpen = new Promise(resolve => {
@@ -75,7 +81,6 @@ export default class Sketch {
             // this.scroll = new Scroll();
             this.addImages();
             this.setPosition();
-
             this.mouseMovement()
             this.resize()
             this.setupResize();
