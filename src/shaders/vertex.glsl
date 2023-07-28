@@ -9,7 +9,7 @@ void main() {
     
     float dist = distance(uv,hover);
 
-    float z = 1.0 + hoverState * -100. * pow(sin(dist * 1. - 1.), 3.); 
+    float z = - 1.0 + hoverState * -100. * pow(sin(dist * 1. - 1.), 3.); 
     newposition.z = z < 0.0 ? 0.0 : z;
 
     vNoise = -5. * pow(sin(dist * 1. - 1.0), 3.0);
