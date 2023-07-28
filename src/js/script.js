@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import imagesLoaded from 'imagesloaded';
 import gsap from 'gsap';
 import FontFaceObserver from 'fontfaceobserver';
-import Scroll from './scroll';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import fragment from '../shaders/fragment.glsl'
 import vertex from '../shaders/vertex.glsl'
@@ -10,6 +9,14 @@ import vertex from '../shaders/vertex.glsl'
 import ocean from '../../static/img/ocean.jpg';
 
 let scrollThree = 0;
+const section1 = document.querySelector('#btob-seminaire')
+const section2 = document.querySelector('#btob-team-building')
+const section3 = document.querySelector('#btob-soiree-entreprise')
+const btn1 = document.querySelector('#btn1')
+const btn2 = document.querySelector('#btn2')
+const btn3 = document.querySelector('#btn3')
+var urlParams = new URLSearchParams(window.location.search);
+let queryString = urlParams.get('link');
 
 export default class Sketch {
     constructor(options) {
@@ -29,31 +36,66 @@ export default class Sketch {
         this.renderer = new THREE.WebGLRenderer({
             antialias: true,
             // no background
-            alpha: true
+            alpha: true, 
+            precision: 'highp'
         });
 
         this.container.appendChild(this.renderer.domElement);
 
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 
-        this.images = [...document.querySelectorAll('#top-page>[paper-effect]')];
-
-        this.bouton = document.querySelector('#bouton');
-        // if (this.bouton.classList.contains('active'))
-        this.bouton.addEventListener('click', () => {
-            while (this.scene.children.length > 0) {
-                var child = this.scene.children[0];
-                this.scene.remove(child);
+        if (section1) {
+            switch (queryString) {
+                case 'seminaire':
+                    this.images = [...document.querySelectorAll('#btob-seminaire [paper-effect]')];
+                    break;
+                case 'team-building':
+                    this.images = [...document.querySelectorAll('#btob-team-building [paper-effect]')];
+                    break;
+                case 'soiree-entreprise':
+                    this.images = [...document.querySelectorAll('#btob-soiree-entreprise [paper-effect]')];
+                    break;
+                default:
+                    this.images = [...document.querySelectorAll('#btob-seminaire [paper-effect]')];
             }
-            this.images = [...document.querySelectorAll('[second-paper-effect]')];
-            this.addImages();
-            this.setPosition();
-            this.mouseMovement()
-            this.resize()
-            this.setupResize();
-            this.render();
-        })
-        
+        } else {
+            this.images = [...document.querySelectorAll('[paper-effect]')]
+        }
+
+        if (btn1) {
+            btn1.addEventListener('click', () => {
+                while (this.scene.children.length > 0) {
+                    var child = this.scene.children[0];
+                    this.scene.remove(child);
+                }
+                this.images = [...document.querySelectorAll('#btob-seminaire [paper-effect]')];
+                this.addImages();
+                this.setPosition();
+            })
+        }
+        if (btn2) {
+            btn2.addEventListener('click', () => {
+                while (this.scene.children.length > 0) {
+                    var child = this.scene.children[0];
+                    this.scene.remove(child);
+                }
+                this.images = [...document.querySelectorAll('#btob-team-building [paper-effect]')];
+                this.addImages();
+                this.setPosition();
+            })
+        }
+        if (btn3) {
+            btn3.addEventListener('click', () => {
+                while (this.scene.children.length > 0) {
+                    var child = this.scene.children[0];
+                    this.scene.remove(child);
+                }
+                this.images = [...document.querySelectorAll('#btob-soiree-entreprise [paper-effect]')];
+                this.addImages();
+                this.setPosition();
+            })
+        }
+
 
         // wait font loaded for no changing position after loaded
         const fontOpen = new Promise(resolve => {
@@ -77,10 +119,13 @@ export default class Sketch {
 
         // if all promises are ok lets go
         Promise.all(allDone).then(() => {
-            // custom scroll to remove laggy positionning cause to the the calculation with the scroll addEventListenner
-            // this.scroll = new Scroll();
             this.addImages();
             this.setPosition();
+            this.imageStore.forEach(o => {
+                // positionning images (from center screen)
+                o.mesh.position.y = this.currentScroll - o.top + this.height / 2 - o.height / 2;
+                o.mesh.position.x = o.left - this.width / 2 + o.width / 2;
+            })
             this.mouseMovement()
             this.resize()
             this.setupResize();
@@ -130,16 +175,6 @@ export default class Sketch {
             uniforms: {
                 time: { value: 0 },
                 uImage: { value: 0 },
-                shaderX: { value: 0 },
-                shaderY: { value: 0 },
-                mouseX: { value: 0 },
-                mouseY: { value: 0 },
-                top: { value: 0 },
-                left: { value: 0 },
-                width: { value: 0 },
-                height: { value: 0 },
-                widthImg: { value: 0 },
-                heightImg: { value: 0 },
                 hover: { value: new THREE.Vector2(0.5, 0.5) },
                 hoverState: { value: 0 },
                 oceanTexture: { value: new THREE.TextureLoader().load(ocean) },
@@ -153,19 +188,13 @@ export default class Sketch {
         this.materials = []
 
         this.imageStore = this.images.map(img => {
-            // images positions
             let bounds = img.getBoundingClientRect()
 
-            let geometry = new THREE.PlaneGeometry(bounds.width, bounds.height, 60, 60);
+            let geometry = new THREE.PlaneGeometry(bounds.width, bounds.height, 100, 100);
 
             let image = new Image();
             image.src = img.src;
             let texture = new THREE.Texture(image);
-
-
-            //             let CLONED_IMAGE = DOM_IMG.cloneNode(true); // this helped when i set image width in JS
-            // let texture = new THREE.Texture(CLONED_IMAGE);
-
 
             texture.needsUpdate = true;
 
@@ -196,7 +225,7 @@ export default class Sketch {
             return {
                 img: img,
                 mesh: mesh,
-                top: bounds.top,
+                top: bounds.top + scrollThree,
                 left: bounds.left,
                 width: bounds.width,
                 height: bounds.height
@@ -233,14 +262,50 @@ export default class Sketch {
 
 // ONLOAD
 window.addEventListener("load", (event) => {
-    const sketch = new Sketch({
-        dom: document.getElementById('container')
-    });
     // window.addEventListener("window-scroll", function (e) {
     //     scrollThree = e.detail;
     // });
     window.addEventListener("scroll", function (e) {
         scrollThree = window.scrollY;
     });
-});
+    if (section1) {
+        switch (queryString) {
+            case 'seminaire':
+                section1.classList.add('active')
+                btn1.classList.add('active')
+                break;
+            case 'team-building':
+                section2.classList.add('active')
+                btn2.classList.add('active')
+                break;
+            case 'soiree-entreprise':
+                section3.classList.add('active')
+                btn3.classList.add('active')
+                break;
+            default:
+                section1.classList.add('active')
+                btn1.classList.add('active')
+        }
 
+        let btns = [btn1, btn2, btn3]
+        let sections = [section1, section2, section3]
+        btns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                sections.forEach(section => {
+                    section.classList.remove('active')
+                });
+                sections[btns.indexOf(btn)].classList.add('active')
+                btns.forEach(btn => {
+                    btn.classList.remove('active')
+                });
+                btn.classList.add('active')
+            })
+        });
+    }
+
+    if (window.innerWidth >= 991) {
+        new Sketch({
+            dom: document.getElementById('container')
+        });
+    }
+});

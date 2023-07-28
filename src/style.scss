@@ -10,15 +10,31 @@ img[paper-effect] {
     top: 0;
     left: 0;
 }
-#bouton {
+#btn1, #btn2, #btn3 {
     padding: 50px;
-    position: fixed;
     background-color: black;
     color: white;
     z-index: 9999;
     &:hover {
         cursor: pointer;
     }
+}
+.boutons {
+    position: fixed;
+    top: 0;
+    display: flex;
+    z-index: 9999;
+}
+.btob-sections {
+    opacity: 0;
+    height: 0;
+    &.active {
+        opacity: 1;
+        height: 200vh;
+    }
+}
+.header {
+    height: 100vh;
 }
 
 /*************************************************
